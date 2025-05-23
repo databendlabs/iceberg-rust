@@ -24,6 +24,7 @@ use std::task::{Context, Poll};
 
 use futures::channel::mpsc::{channel, Sender};
 use futures::StreamExt;
+use tokio::sync::Notify;
 
 use crate::runtime::spawn;
 use crate::scan::{DeleteFileContext, FileScanTaskDeleteFile};
@@ -38,7 +39,7 @@ pub(crate) struct DeleteFileIndex {
 
 #[derive(Debug)]
 enum DeleteFileIndexState {
-    Populating,
+    Populating(Arc<Notify>),
     Populated(PopulatedDeleteFileIndex),
 }
 
@@ -59,18 +60,26 @@ impl DeleteFileIndex {
     pub(crate) fn new() -> (DeleteFileIndex, Sender<DeleteFileContext>) {
         // TODO: what should the channel limit be?
         let (tx, rx) = channel(10);
-        let state = Arc::new(RwLock::new(DeleteFileIndexState::Populating));
+        let notify = Arc::new(Notify::new());
+        let state = Arc::new(RwLock::new(DeleteFileIndexState::Populating(
+            notify.clone(),
+        )));
         let delete_file_stream = rx.boxed();
 
         spawn({
             let state = state.clone();
             async move {
+                println!("iceberg: delete collect");
                 let delete_files = delete_file_stream.collect::<Vec<_>>().await;
 
                 let populated_delete_file_index = PopulatedDeleteFileIndex::new(delete_files);
 
-                let mut guard = state.write().unwrap();
-                *guard = DeleteFileIndexState::Populated(populated_delete_file_index);
+                println!("iceberg: delete ready");
+                {
+                    let mut guard = state.write().unwrap();
+                    *guard = DeleteFileIndexState::Populated(populated_delete_file_index);
+                }
+                notify.notify_waiters()
             }
         });
 
@@ -80,15 +89,29 @@ impl DeleteFileIndex {
     /// Gets all the delete files that apply to the specified data file.
     ///
     /// Returns a future that resolves to a Result<Vec<FileScanTaskDeleteFile>>
-    pub(crate) fn get_deletes_for_data_file<'a>(
+    pub(crate) async fn get_deletes_for_data_file<'a>(
         &self,
         data_file: &'a DataFile,
         seq_num: Option<i64>,
-    ) -> DeletesForDataFile<'a> {
-        DeletesForDataFile {
-            state: self.state.clone(),
-            data_file,
-            seq_num,
+    ) -> Vec<FileScanTaskDeleteFile> {
+        let notifier = {
+            let guard = self.state.read().unwrap();
+            match *guard {
+                DeleteFileIndexState::Populating(ref notifier) => notifier.clone(),
+                DeleteFileIndexState::Populated(ref index) => {
+                    return index.get_deletes_for_data_file(data_file, seq_num);
+                }
+            }
+        };
+
+        notifier.notified().await;
+
+        let guard = self.state.read().unwrap();
+        match guard.deref() {
+            DeleteFileIndexState::Populated(index) => {
+                index.get_deletes_for_data_file(data_file, seq_num)
+            }
+            _ => unreachable!("Cannot be any other state than loaded"),
         }
     }
 }
@@ -191,28 +214,5 @@ impl PopulatedDeleteFileIndex {
         }
 
         results
-    }
-}
-
-/// Future for the `DeleteFileIndex::get_deletes_for_data_file` method
-pub(crate) struct DeletesForDataFile<'a> {
-    state: Arc<RwLock<DeleteFileIndexState>>,
-    data_file: &'a DataFile,
-    seq_num: Option<i64>,
-}
-
-impl Future for DeletesForDataFile<'_> {
-    type Output = Result<Vec<FileScanTaskDeleteFile>>;
-
-    fn poll(self: Pin<&mut Self>, _cx: &mut Context<'_>) -> Poll<Self::Output> {
-        match self.state.try_read() {
-            Ok(guard) => match guard.deref() {
-                DeleteFileIndexState::Populated(idx) => Poll::Ready(Ok(
-                    idx.get_deletes_for_data_file(self.data_file, self.seq_num)
-                )),
-                _ => Poll::Pending,
-            },
-            Err(err) => Poll::Ready(Err(Error::new(ErrorKind::Unexpected, err.to_string()))),
-        }
     }
 }
