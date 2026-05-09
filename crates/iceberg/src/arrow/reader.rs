@@ -1967,7 +1967,7 @@ message schema {
         assert_eq!(err.kind(), ErrorKind::DataInvalid);
         assert_eq!(
             err.to_string(),
-            "DataInvalid => Unsupported Arrow data type: Duration(µs)".to_string()
+            "DataInvalid => Unsupported Arrow data type: Duration(Microsecond)".to_string()
         );
 
         // Omitting field c2, we still get an error due to c3 being selected
