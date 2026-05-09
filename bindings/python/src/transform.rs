@@ -71,7 +71,7 @@ fn apply(py: Python, array: Py<PyAny>, transform: Transform) -> PyResult<Py<PyAn
     let array = transform_function.transform(array).map_err(to_py_err)?;
     // export
     let array = array.into_data();
-    Ok(array.to_pyarrow(py)?.unbind())
+    array.to_pyarrow(py)
 }
 
 pub fn register_module(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {

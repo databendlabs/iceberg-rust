@@ -522,11 +522,10 @@ impl FileWriter for ParquetWriter {
             None => return Ok(vec![]),
         };
 
-        let row_groups = writer.flushed_row_groups().to_vec();
-
         let file_metadata = writer.finish().await.map_err(|err| {
             Error::new(ErrorKind::Unexpected, "Failed to finish parquet writer.").with_source(err)
         })?;
+        let row_groups = writer.flushed_row_groups().to_vec();
 
         let written_size = writer.bytes_written();
 
