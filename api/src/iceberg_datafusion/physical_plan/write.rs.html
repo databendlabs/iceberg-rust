@@ -64,7 +64,7 @@
 <a href=#64 id=64 data-nosnippet>64</a>    table: Table,
 <a href=#65 id=65 data-nosnippet>65</a>    input: Arc&lt;<span class="kw">dyn </span>ExecutionPlan&gt;,
 <a href=#66 id=66 data-nosnippet>66</a>    result_schema: ArrowSchemaRef,
-<a href=#67 id=67 data-nosnippet>67</a>    plan_properties: PlanProperties,
+<a href=#67 id=67 data-nosnippet>67</a>    plan_properties: Arc&lt;PlanProperties&gt;,
 <a href=#68 id=68 data-nosnippet>68</a>}
 <a href=#69 id=69 data-nosnippet>69</a>
 <a href=#70 id=70 data-nosnippet>70</a><span class="kw">impl </span>IcebergWriteExec {
@@ -82,13 +82,13 @@
 <a href=#82 id=82 data-nosnippet>82</a>    <span class="kw">fn </span>compute_properties(
 <a href=#83 id=83 data-nosnippet>83</a>        input: <span class="kw-2">&amp;</span>Arc&lt;<span class="kw">dyn </span>ExecutionPlan&gt;,
 <a href=#84 id=84 data-nosnippet>84</a>        schema: ArrowSchemaRef,
-<a href=#85 id=85 data-nosnippet>85</a>    ) -&gt; PlanProperties {
-<a href=#86 id=86 data-nosnippet>86</a>        PlanProperties::new(
+<a href=#85 id=85 data-nosnippet>85</a>    ) -&gt; Arc&lt;PlanProperties&gt; {
+<a href=#86 id=86 data-nosnippet>86</a>        Arc::new(PlanProperties::new(
 <a href=#87 id=87 data-nosnippet>87</a>            EquivalenceProperties::new(schema),
 <a href=#88 id=88 data-nosnippet>88</a>            Partitioning::UnknownPartitioning(input.output_partitioning().partition_count()),
 <a href=#89 id=89 data-nosnippet>89</a>            EmissionType::Final,
 <a href=#90 id=90 data-nosnippet>90</a>            Boundedness::Bounded,
-<a href=#91 id=91 data-nosnippet>91</a>        )
+<a href=#91 id=91 data-nosnippet>91</a>        ))
 <a href=#92 id=92 data-nosnippet>92</a>    }
 <a href=#93 id=93 data-nosnippet>93</a>
 <a href=#94 id=94 data-nosnippet>94</a>    <span class="comment">// Create a record batch with serialized data files
@@ -153,7 +153,7 @@
 <a href=#153 id=153 data-nosnippet>153</a>        </span><span class="macro">vec!</span>[<span class="bool-val">true</span>; <span class="self">self</span>.children().len()]
 <a href=#154 id=154 data-nosnippet>154</a>    }
 <a href=#155 id=155 data-nosnippet>155</a>
-<a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">fn </span>properties(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>PlanProperties {
+<a href=#156 id=156 data-nosnippet>156</a>    <span class="kw">fn </span>properties(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;PlanProperties&gt; {
 <a href=#157 id=157 data-nosnippet>157</a>        <span class="kw-2">&amp;</span><span class="self">self</span>.plan_properties
 <a href=#158 id=158 data-nosnippet>158</a>    }
 <a href=#159 id=159 data-nosnippet>159</a>
@@ -353,17 +353,17 @@
 <a href=#353 id=353 data-nosnippet>353</a>    </span><span class="kw">struct </span>MockExecutionPlan {
 <a href=#354 id=354 data-nosnippet>354</a>        schema: ArrowSchemaRef,
 <a href=#355 id=355 data-nosnippet>355</a>        batches: Vec&lt;RecordBatch&gt;,
-<a href=#356 id=356 data-nosnippet>356</a>        properties: PlanProperties,
+<a href=#356 id=356 data-nosnippet>356</a>        properties: Arc&lt;PlanProperties&gt;,
 <a href=#357 id=357 data-nosnippet>357</a>    }
 <a href=#358 id=358 data-nosnippet>358</a>
 <a href=#359 id=359 data-nosnippet>359</a>    <span class="kw">impl </span>MockExecutionPlan {
 <a href=#360 id=360 data-nosnippet>360</a>        <span class="kw">fn </span>new(schema: ArrowSchemaRef, batches: Vec&lt;RecordBatch&gt;) -&gt; <span class="self">Self </span>{
-<a href=#361 id=361 data-nosnippet>361</a>            <span class="kw">let </span>properties = PlanProperties::new(
+<a href=#361 id=361 data-nosnippet>361</a>            <span class="kw">let </span>properties = Arc::new(PlanProperties::new(
 <a href=#362 id=362 data-nosnippet>362</a>                EquivalenceProperties::new(schema.clone()),
 <a href=#363 id=363 data-nosnippet>363</a>                Partitioning::UnknownPartitioning(<span class="number">1</span>),
 <a href=#364 id=364 data-nosnippet>364</a>                EmissionType::Final,
 <a href=#365 id=365 data-nosnippet>365</a>                Boundedness::Bounded,
-<a href=#366 id=366 data-nosnippet>366</a>            );
+<a href=#366 id=366 data-nosnippet>366</a>            ));
 <a href=#367 id=367 data-nosnippet>367</a>
 <a href=#368 id=368 data-nosnippet>368</a>            <span class="self">Self </span>{
 <a href=#369 id=369 data-nosnippet>369</a>                schema,
@@ -400,7 +400,7 @@
 <a href=#400 id=400 data-nosnippet>400</a>            <span class="self">self
 <a href=#401 id=401 data-nosnippet>401</a>        </span>}
 <a href=#402 id=402 data-nosnippet>402</a>
-<a href=#403 id=403 data-nosnippet>403</a>        <span class="kw">fn </span>properties(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>PlanProperties {
+<a href=#403 id=403 data-nosnippet>403</a>        <span class="kw">fn </span>properties(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Arc&lt;PlanProperties&gt; {
 <a href=#404 id=404 data-nosnippet>404</a>            <span class="kw-2">&amp;</span><span class="self">self</span>.properties
 <a href=#405 id=405 data-nosnippet>405</a>        }
 <a href=#406 id=406 data-nosnippet>406</a>
