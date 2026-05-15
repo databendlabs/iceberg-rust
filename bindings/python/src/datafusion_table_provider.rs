@@ -19,6 +19,7 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Arc;
 
+use datafusion_ffi::execution::FFI_TaskContextProvider;
 use datafusion_ffi::table_provider::FFI_TableProvider;
 use iceberg::TableIdent;
 use iceberg::io::FileIO;
@@ -26,7 +27,7 @@ use iceberg::table::StaticTable;
 use iceberg_datafusion::table::IcebergStaticTableProvider;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::prelude::*;
-use pyo3::types::PyCapsule;
+use pyo3::types::{PyCapsule, PyCapsuleMethods};
 
 use crate::runtime::runtime;
 
@@ -84,10 +85,27 @@ impl PyIcebergDataFusionTable {
     fn __datafusion_table_provider__<'py>(
         &self,
         py: Python<'py>,
+        session: Bound<'py, PyAny>,
     ) -> PyResult<Bound<'py, PyCapsule>> {
         let capsule_name = CString::new("datafusion_table_provider").unwrap();
+        let task_ctx_provider_capsule = session
+            .call_method0("__datafusion_task_context_provider__")?
+            .cast_into::<PyCapsule>()?;
+        let task_ctx_provider = unsafe {
+            task_ctx_provider_capsule
+                .pointer_checked(Some(c"datafusion_task_context_provider"))?
+                .cast::<FFI_TaskContextProvider>()
+                .as_ref()
+        }
+        .clone();
 
-        let ffi_provider = FFI_TableProvider::new(self.inner.clone(), false, Some(runtime()));
+        let ffi_provider = FFI_TableProvider::new(
+            self.inner.clone(),
+            false,
+            Some(runtime()),
+            task_ctx_provider,
+            None,
+        );
 
         PyCapsule::new(py, ffi_provider, Some(capsule_name))
     }

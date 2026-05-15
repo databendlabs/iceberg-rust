@@ -17,7 +17,8 @@
 
 
 install:
-	uv sync --group dev --no-install-project
+	uv venv .venv
+	uv pip install --python .venv --group dev
 
 build:
 	uv run maturin develop

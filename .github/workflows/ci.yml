@@ -89,18 +89,6 @@ jobs:
           - macos-latest
           - windows-latest
     steps:
-      - name: Maximize build space (Ubuntu)
-        if: matrix.os == 'ubuntu-latest'
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-haskell: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
-          root-reserve-mb: 10240
-          temp-reserve-mb: 10240
-
       - uses: actions/checkout@v6
 
       - name: Setup Rust toolchain
@@ -146,17 +134,6 @@ jobs:
           - { name: "doc", args: "--doc --all-features --workspace" }
     name: Unit Tests (${{ matrix.test-suite.name }})
     steps:
-      - name: Maximize build space
-        uses: easimon/maximize-build-space@master
-        with:
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-haskell: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
-          root-reserve-mb: 10240
-          temp-reserve-mb: 10240
-
       - uses: actions/checkout@v6
 
       - name: Setup Rust toolchain

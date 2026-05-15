@@ -30,7 +30,6 @@ version.workspace = true
 anyhow = { workspace = true }
 clap = { workspace = true }
 datafusion = { workspace = true }
-datafusion-cli = { workspace = true }
 dirs = { workspace = true }
 fs-err = { workspace = true }
 home = { workspace = true }
