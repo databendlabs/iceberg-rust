@@ -424,6 +424,10 @@ impl SchemaWithPartnerVisitor<ArrayRef> for ArrowArrayToIcebergStructConverter {
                     ))
                 }
             }
+            PrimitiveType::Variant => Err(Error::new(
+                ErrorKind::FeatureUnsupported,
+                "Converting arrow array to variant literals is not supported yet.",
+            )),
         }
     }
 }
