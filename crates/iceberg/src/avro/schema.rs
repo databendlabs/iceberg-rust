@@ -237,6 +237,12 @@ impl SchemaVisitor for SchemaToAvroSchema {
             PrimitiveType::Uuid => AvroSchema::Uuid,
             PrimitiveType::Fixed(len) => avro_fixed_schema((*len) as usize)?,
             PrimitiveType::Binary => AvroSchema::Bytes,
+            PrimitiveType::Variant => {
+                return Err(Error::new(
+                    ErrorKind::FeatureUnsupported,
+                    "Converting variant type to avro schema is not supported yet.",
+                ));
+            }
             PrimitiveType::Decimal { precision, scale } => {
                 avro_decimal_schema(*precision as usize, *scale as usize)?
             }

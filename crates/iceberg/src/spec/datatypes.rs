@@ -241,6 +241,8 @@ pub enum PrimitiveType {
     TimestamptzNs,
     /// Arbitrary-length character sequences encoded in utf-8
     String,
+    /// Semi-structured data encoded as an Iceberg variant.
+    Variant,
     /// Universally Unique Identifiers, should use 16-byte fixed
     Uuid,
     /// Fixed length byte array
@@ -379,6 +381,7 @@ impl fmt::Display for PrimitiveType {
             PrimitiveType::TimestampNs => write!(f, "timestamp_ns"),
             PrimitiveType::TimestamptzNs => write!(f, "timestamptz_ns"),
             PrimitiveType::String => write!(f, "string"),
+            PrimitiveType::Variant => write!(f, "variant"),
             PrimitiveType::Uuid => write!(f, "uuid"),
             PrimitiveType::Fixed(size) => write!(f, "fixed({size})"),
             PrimitiveType::Binary => write!(f, "binary"),
@@ -868,7 +871,8 @@ mod tests {
             {"id": 13, "name": "uuid_field", "required": true, "type": "uuid"},
             {"id": 14, "name": "fixed_field", "required": true, "type": "fixed[10]"},
             {"id": 15, "name": "binary_field", "required": true, "type": "binary"},
-            {"id": 16, "name": "string_field", "required": true, "type": "string"}
+            {"id": 16, "name": "string_field", "required": true, "type": "string"},
+            {"id": 17, "name": "variant_field", "required": true, "type": "variant"}
         ]
     }
     "#;
@@ -946,6 +950,12 @@ mod tests {
                         16,
                         "string_field",
                         Type::Primitive(PrimitiveType::String),
+                    )
+                    .into(),
+                    NestedField::required(
+                        17,
+                        "variant_field",
+                        Type::Primitive(PrimitiveType::Variant),
                     )
                     .into(),
                 ],

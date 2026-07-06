@@ -1732,6 +1732,12 @@ mod tests {
                                 "name": "ts",
                                 "required": true,
                                 "type": "timestamp"
+                            },
+                            {
+                                "id": 5,
+                                "name": "payload",
+                                "required": false,
+                                "type": "variant"
                             }
                         ]
                     }
@@ -1798,11 +1804,18 @@ mod tests {
 
         let schema = Schema::builder()
             .with_schema_id(1)
-            .with_fields(vec![Arc::new(NestedField::required(
-                4,
-                "ts",
-                Type::Primitive(PrimitiveType::Timestamp),
-            ))])
+            .with_fields(vec![
+                Arc::new(NestedField::required(
+                    4,
+                    "ts",
+                    Type::Primitive(PrimitiveType::Timestamp),
+                )),
+                Arc::new(NestedField::optional(
+                    5,
+                    "payload",
+                    Type::Primitive(PrimitiveType::Variant),
+                )),
+            ])
             .build()
             .unwrap();
 

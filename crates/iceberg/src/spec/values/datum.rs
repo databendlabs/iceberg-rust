@@ -406,6 +406,12 @@ impl Datum {
             }
             PrimitiveType::Fixed(_) => PrimitiveLiteral::Binary(Vec::from(bytes)),
             PrimitiveType::Binary => PrimitiveLiteral::Binary(Vec::from(bytes)),
+            PrimitiveType::Variant => {
+                return Err(Error::new(
+                    ErrorKind::FeatureUnsupported,
+                    "Converting bytes to variant datum is not supported yet.",
+                ));
+            }
             PrimitiveType::Decimal { .. } => {
                 let unscaled_value = BigInt::from_signed_bytes_be(bytes);
                 PrimitiveLiteral::Int128(unscaled_value.to_i128().ok_or_else(|| {
