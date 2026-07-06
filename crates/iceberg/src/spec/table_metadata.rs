@@ -760,7 +760,9 @@ pub(super) mod _serde {
         pub snapshot_log: Option<Vec<SnapshotLog>>,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub metadata_log: Option<Vec<MetadataLog>>,
+        #[serde(default)]
         pub sort_orders: Vec<SortOrder>,
+        #[serde(default = "default_sort_order_id")]
         pub default_sort_order_id: i64,
         #[serde(skip_serializing_if = "Option::is_none")]
         pub refs: Option<HashMap<String, SnapshotReference>>,
@@ -826,6 +828,10 @@ pub(super) mod _serde {
     /// Helper to serialize and deserialize the format version.
     #[derive(Debug, PartialEq, Eq)]
     pub(crate) struct VersionNumber<const V: u8>;
+
+    fn default_sort_order_id() -> i64 {
+        SortOrder::UNSORTED_ORDER_ID
+    }
 
     impl Serialize for TableMetadata {
         fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -3355,12 +3361,11 @@ mod tests {
             fs::read_to_string("testdata/table_metadata/TableMetadataV2MissingSortOrder.json")
                 .unwrap();
 
-        let desered: Result<TableMetadata, serde_json::Error> = serde_json::from_str(&metadata);
+        let desered: TableMetadata = serde_json::from_str(&metadata).unwrap();
 
-        assert_eq!(
-            desered.unwrap_err().to_string(),
-            "data did not match any variant of untagged enum TableMetadataEnum"
-        )
+        assert_eq!(desered.default_sort_order_id(), 0);
+        assert_eq!(desered.sort_orders_iter().len(), 1);
+        assert!(desered.sort_order_by_id(0).unwrap().is_unsorted());
     }
 
     #[test]
