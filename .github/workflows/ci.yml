@@ -115,6 +115,13 @@ jobs:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build
+        if: matrix.os != 'windows-latest'
+        run: make build
+
+      - name: Build
+        if: matrix.os == 'windows-latest'
+        env:
+          AWS_LC_SYS_C_STD: "11"
         run: make build
 
   build_with_no_default_features:
