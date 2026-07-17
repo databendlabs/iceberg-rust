@@ -82,6 +82,9 @@ jobs:
 
   build:
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
     strategy:
       matrix:
         os:
@@ -126,6 +129,9 @@ jobs:
 
   build_with_no_default_features:
     runs-on: ${{ matrix.os }}
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
     strategy:
       matrix:
         os:
@@ -146,6 +152,9 @@ jobs:
 
   unit:
     runs-on: ubuntu-latest
+    env:
+      CARGO_INCREMENTAL: "0"
+      CARGO_PROFILE_DEV_DEBUG: "0"
     strategy:
       matrix:
         test-suite:
