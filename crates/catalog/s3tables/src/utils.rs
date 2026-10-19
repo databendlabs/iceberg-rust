@@ -18,7 +18,11 @@
 use std::collections::HashMap;
 
 use aws_config::{BehaviorVersion, Region, SdkConfig};
-use aws_sdk_s3tables::config::Credentials;
+use aws_sdk_s3tables::config::{Credentials, SharedHttpClient};
+use aws_smithy_http_client::proxy::ProxyConfig;
+use aws_smithy_http_client::tls::Provider;
+use aws_smithy_http_client::tls::rustls_provider::CryptoMode;
+use aws_smithy_http_client::{Builder, ConnectorBuilder};
 
 /// Property aws profile name
 pub const AWS_PROFILE_NAME: &str = "profile_name";
@@ -31,13 +35,29 @@ pub const AWS_SECRET_ACCESS_KEY: &str = "aws_secret_access_key";
 /// Property aws session token
 pub const AWS_SESSION_TOKEN: &str = "aws_session_token";
 
+/// Same HTTPS client as the SDK's `default-https-client` (hyper 1.x + rustls, proxy from
+/// env), but backed by ring instead of aws-lc.
+fn ring_https_client() -> SharedHttpClient {
+    Builder::new().build_with_connector_fn(|settings, runtime_components| {
+        let mut conn_builder =
+            ConnectorBuilder::default().tls_provider(Provider::Rustls(CryptoMode::Ring));
+        conn_builder.set_connector_settings(settings.cloned());
+        if let Some(components) = runtime_components {
+            conn_builder.set_sleep_impl(components.sleep_impl());
+        }
+        conn_builder.set_proxy_config(Some(ProxyConfig::from_env()));
+        conn_builder.build()
+    })
+}
+
 /// Creates an aws sdk configuration based on
 /// provided properties and an optional endpoint URL.
 pub(crate) async fn create_sdk_config(
     properties: &HashMap<String, String>,
     endpoint_url: Option<String>,
 ) -> SdkConfig {
-    let mut config = aws_config::defaults(BehaviorVersion::latest());
+    let mut config =
+        aws_config::defaults(BehaviorVersion::latest()).http_client(ring_https_client());
 
     if properties.is_empty() {
         return config.load().await;

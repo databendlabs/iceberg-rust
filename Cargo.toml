@@ -53,8 +53,11 @@ arrow-string = "56.0"
 as-any = "0.3.2"
 async-trait = "0.1.89"
 aws-config = "1.8.7"
-aws-sdk-glue = { version = "1.85", default-features = false, features = ["default-https-client", "rt-tokio"] }
-aws-sdk-s3tables = { version = "1.28", default-features = false, features = ["default-https-client", "rt-tokio"] }
+# The SDK HTTPS client is installed explicitly (see `ring_https_client`), so that the TLS
+# backend is ring instead of aws-lc and `aws-lc-sys` is not built at all.
+aws-smithy-http-client = { version = "1.1.5", default-features = false, features = ["rustls-ring"] }
+aws-sdk-glue = { version = "1.85", default-features = false, features = ["rt-tokio"] }
+aws-sdk-s3tables = { version = "1.28", default-features = false, features = ["rt-tokio"] }
 backon = "1.5.1"
 base64 = "0.22.1"
 bimap = "0.6"
