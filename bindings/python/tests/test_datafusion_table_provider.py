@@ -106,7 +106,7 @@ def test_register_iceberg_table_provider(
     )
 
     ctx = SessionContext()
-    ctx.register_table_provider("test", iceberg_table_provider)
+    ctx.register_table("test", iceberg_table_provider)
 
     datafusion_table = ctx.table("test")
     assert datafusion_table is not None
@@ -142,19 +142,19 @@ def test_register_pyiceberg_table(
     iceberg_table.append(arrow_table_with_null)
 
     # monkey patch the __datafusion_table_provider__ method to the iceberg table
-    def __datafusion_table_provider__(self):
+    def __datafusion_table_provider__(self, session):
         return IcebergDataFusionTable(
             identifier=self.name(),
             metadata_location=self.metadata_location,
             file_io_properties=self.io.properties,
-        ).__datafusion_table_provider__()
+        ).__datafusion_table_provider__(session)
 
     iceberg_table.__datafusion_table_provider__ = MethodType(
         __datafusion_table_provider__, iceberg_table
     )
 
     ctx = SessionContext()
-    ctx.register_table_provider("test", iceberg_table)
+    ctx.register_table("test", iceberg_table)
 
     datafusion_table = ctx.table("test")
     assert datafusion_table is not None

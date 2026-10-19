@@ -41,6 +41,16 @@ const MICROS_PER_SECOND: i64 = 1_000_000;
 /// One second in nanos.
 const NANOS_PER_SECOND: i64 = 1_000_000_000;
 
+#[inline]
+fn date32_to_naive_date(value: i32, transform: &str) -> Result<chrono::NaiveDate> {
+    Date32Type::to_naive_date_opt(value).ok_or_else(|| {
+        Error::new(
+            ErrorKind::DataInvalid,
+            format!("Fail to convert date to NaiveDate in {transform} transform"),
+        )
+    })
+}
+
 /// Extract a date or timestamp year, as years from 1970
 #[derive(Debug)]
 pub struct Year;
@@ -81,7 +91,7 @@ impl TransformFunction for Year {
     fn transform_literal(&self, input: &crate::spec::Datum) -> Result<Option<crate::spec::Datum>> {
         let val = match (input.data_type(), input.literal()) {
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => {
-                Date32Type::to_naive_date(*v).year() - UNIX_EPOCH_YEAR
+                date32_to_naive_date(*v, "year")?.year() - UNIX_EPOCH_YEAR
             }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => {
                 Self::timestamp_to_year_micros(*v)?
@@ -178,8 +188,8 @@ impl TransformFunction for Month {
     fn transform_literal(&self, input: &crate::spec::Datum) -> Result<Option<crate::spec::Datum>> {
         let val = match (input.data_type(), input.literal()) {
             (PrimitiveType::Date, PrimitiveLiteral::Int(v)) => {
-                (Date32Type::to_naive_date(*v).year() - UNIX_EPOCH_YEAR) * 12
-                    + Date32Type::to_naive_date(*v).month0() as i32
+                let date = date32_to_naive_date(*v, "month")?;
+                (date.year() - UNIX_EPOCH_YEAR) * 12 + date.month0() as i32
             }
             (PrimitiveType::Timestamp, PrimitiveLiteral::Long(v)) => {
                 Self::timestamp_to_month_micros(*v)?
